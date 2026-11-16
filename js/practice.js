@@ -5,6 +5,28 @@
   const LIMIT = { 1: 45, 2: 120, 3: 90 };
   const PART_NAME = { 1: 'Part 1 – Introduction & interview', 2: 'Part 2 – Long turn (cue card)', 3: 'Part 3 – Discussion' };
 
+  // ---------- Chuỗi câu (luyện liên tiếp / ngẫu nhiên / Part 2 → 3) ----------
+  // Lưu ở máy: { name, ids, p2_id? }. Trang câu hỏi có ?seq=1 thì hiện "câu k/n" và nút câu tiếp.
+  const Seq = {
+    get: () => LS.get('hs.seq', null),
+    start(name, ids, extra) {
+      if (!ids.length) return toast('Không có câu nào');
+      LS.set('hs.seq', Object.assign({ name, ids }, extra || {}));
+      location.hash = '#/q/' + ids[0] + '?seq=1';
+    },
+    insertAfter(id, newIds) {
+      const s = Seq.get(); if (!s) return;
+      const i = s.ids.indexOf(id);
+      s.ids = s.ids.filter((x) => newIds.indexOf(x) < 0);
+      s.ids.splice(i + 1, 0, ...newIds);
+      LS.set('hs.seq', s);
+    },
+  };
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  async function startP2P3(p2Id) {
+    try { const r = await Api.call('practiceSet', { mode: 'p2p3', p2_id: p2Id || '' }); Seq.start(r.name, r.ids, { p2_id: r.p2_id }); } catch (e) { toast(e.message); }
+  }
+
   // ---------- Luyện Forecast ----------
   App.route(/^#\/practice(?:\/(\w+))?$/, async (tab) => {
     App.loading('practice');
@@ -28,6 +50,8 @@
       const m = App.shell('practice', html`
         <div class="row"><h1 style="margin-right:auto">Luyện Forecast</h1>${App.can.learn() ? html`<a class="btn sm" href="#/add">+ Thêm câu hỏi</a>` : ''}</div>
         <div class="seg" role="tablist">${[['1', 'Part 1'], ['2', 'Part 2'], ['3', 'Part 3'], ['mine', 'Câu bạn thêm']].map(([k, l]) => html`<a href="#/practice/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`)}</div>
+        ${App.can.learn() && tab === '1' ? html`<div class="modebar card"><div><b>🎲 Part 1 như thi thật</b><small class="muted">3 chủ đề ngẫu nhiên (1 chủ đề mở đầu: học/làm/quê/nhà), mỗi chủ đề 3–4 câu, hỏi liên tiếp.</small></div><button class="btn primary" id="p1exam">Bắt đầu</button></div>` : ''}
+        ${App.can.learn() && tab === '2' ? html`<div class="modebar card"><div><b>🎲 Part 2 → Part 3 ngẫu nhiên</b><small class="muted">1 cue card ngẫu nhiên → 2 câu hỏi thêm AI đặt theo chính câu chuyện bạn kể → các câu Part 3 cùng chủ đề trong forecast.</small></div><button class="btn primary" id="p2rand">Bắt đầu</button></div>` : ''}
         <div class="filters row">
           <select class="input sm" id="fq"><option value="">Mọi quý</option>${quarters.map((x) => html`<option value="${x}" ${x === f.quarter ? 'selected' : ''}>${x.replace('2026Q', 'Quý ')}/2026</option>`)}</select>
           <select class="input sm" id="fs"><option value="">Tất cả</option><option value="new" ${f.status === 'new' ? 'selected' : ''}>Chưa luyện</option><option value="low" ${f.status === 'low' ? 'selected' : ''}>Dưới mục tiêu</option>${App.can.edit() ? html`<option value="review" ${f.status === 'review' ? 'selected' : ''}>Cần sửa (OCR)</option>` : ''}</select>
@@ -36,6 +60,10 @@
         ${list.length ? html`<div class="split">
           <aside class="topics" aria-label="Chủ đề">${topics.map((tp) => html`<button class="topic ${tp === cur ? 'on' : ''}" data-tp="${tp}"><span>${tp}</span><small>${byTopic[tp].filter((q) => q.practiced).length}/${byTopic[tp].length}</small></button>`)}</aside>
           <section id="qpane"></section></div>` : html`<p class="muted">Không có câu nào khớp bộ lọc.${tab === 'mine' ? ' Thêm câu riêng ở nút "+ Thêm câu hỏi" hoặc tạo từ bộ từ vựng.' : ''}</p>`}`);
+      const p1b = m.querySelector('#p1exam');
+      if (p1b) p1b.onclick = async () => { try { const r = await Api.call('practiceSet', { mode: 'p1_exam', quarter: f.quarter }); Seq.start(r.name, r.ids); } catch (e) { toast(e.message); } };
+      const p2b = m.querySelector('#p2rand');
+      if (p2b) p2b.onclick = () => startP2P3('');
       const save = () => { LS.set('hs.filter', { quarter: m.querySelector('#fq').value, status: m.querySelector('#fs').value, q: m.querySelector('#fx').value }); App.go(); };
       m.querySelector('#fq').onchange = save; m.querySelector('#fs').onchange = save;
       let tm; m.querySelector('#fx').oninput = () => { clearTimeout(tm); tm = setTimeout(save, 400); };
@@ -44,11 +72,18 @@
         LS.set('hs.topic.' + tab, tp);
         m.querySelectorAll('.topic').forEach((b) => b.classList.toggle('on', b.dataset.tp === tp));
         const qsT = byTopic[tp] || [];
-        pane.innerHTML = html`<div class="row"><h2 style="margin:0 auto 0 0">${tp}</h2>${tab !== '2' && App.can.learn() && qsT.length > 1 ? html`<a class="btn sm primary" href="#/q/${qsT[0].id}?topic=1">▶ Luyện cả topic</a>` : ''}</div>
+        const canSeq = App.can.learn();
+        pane.innerHTML = html`<div class="row"><h2 style="margin:0 auto 0 0">${tp}</h2>
+          ${canSeq && tab !== '2' && qsT.length > 1 ? html`<button class="btn sm" id="tseq">▶ Lần lượt</button><button class="btn sm primary" id="trand">🎲 Hỏi ngẫu nhiên</button>` : ''}
+          ${canSeq && tab === '2' && qsT.length ? html`<button class="btn sm primary" id="tp23">▶ Part 2 → Part 3</button>` : ''}</div>
           <div class="qlist">${qsT.map((q) => html`<a class="qrow card" href="#/q/${q.id}">
             <span class="qtext">${q.text}${q.part === 2 && q.cue_points.length ? html`<small class="muted cue">${q.cue_points.join(' · ')}</small>` : ''}
             ${q.needs_review ? html`<small class="tag">cần sửa</small>` : ''}</span>
             <span class="qmeta">${q.last_band !== null ? html`<span class="bandbadge ${bandClass(q.last_band, t)}">${band(q.last_band)}</span>` : ''}<small class="muted">${q.practiced ? `Đã luyện ${q.practiced} lần` : ''}</small></span></a>`)}</div>`.__html;
+        const bs = pane.querySelector('#tseq'), br = pane.querySelector('#trand'), b23 = pane.querySelector('#tp23');
+        if (bs) bs.onclick = () => Seq.start('Lần lượt', qsT.map((q) => q.id));
+        if (br) br.onclick = () => Seq.start('Ngẫu nhiên', shuffle(qsT).slice(0, 6).map((q) => q.id));
+        if (b23) b23.onclick = () => startP2P3(qsT[0].id);
         if (window.innerWidth < 760) pane.scrollIntoView({ behavior: 'smooth' });
       };
       m.querySelectorAll('.topic').forEach((b) => { b.onclick = () => show(b.dataset.tp); });
@@ -57,23 +92,22 @@
   });
 
   // ---------- Trang luyện 1 câu ----------
-  // query: topic=1 (luyện liên tiếp cả topic), mode=improve&from=<attempt>
+  // query: seq=1 (đang trong chuỗi câu), from=<attempt> (cải thiện câu)
   App.route(/^#\/q\/([\w-]+)(?:\?(.*))?$/, async (id, query) => {
     const params = new URLSearchParams(query || '');
     App.loading('practice');
     let q;
     try { q = await App.question(id); if (!q) throw new Error('Không tìm thấy câu hỏi'); } catch (e) { return App.fail('practice', e); }
     const t = App.target();
-    const topicMode = params.get('topic') === '1';
+    const seq0 = params.get('seq') === '1' ? Seq.get() : null;
+    const seq = seq0 && seq0.ids.indexOf(q.id) >= 0 ? seq0 : null;
     const improveFrom = params.get('from');
     let improveText = '';
     if (improveFrom) { try { const a = await Api.call('getAttempt', { attempt_id: improveFrom }); improveText = (a.result && a.result.model_answer) || ''; } catch (e) { /* bỏ qua */ } }
-    const qsTopic = topicMode ? (await App.questions()).filter((x) => x.topic === q.topic && x.part === q.part && x.custom === q.custom) : [];
-    const nextQ = topicMode ? qsTopic[qsTopic.findIndex((x) => x.id === q.id) + 1] : null;
     const m = App.shell('practice', html`<div class="narrow practice">
-      <p class="crumbs small"><a href="#/practice/${q.custom ? 'mine' : q.part}">← ${PART_NAME[q.part]}</a> · ${q.topic}${topicMode ? ` · câu ${qsTopic.findIndex((x) => x.id === q.id) + 1}/${qsTopic.length}` : ''}</p>
+      <p class="crumbs small"><a href="#/practice/${q.custom ? 'mine' : q.part}">← ${PART_NAME[q.part]}</a> · ${q.topic}<span id="seqpos">${seq ? ` · ${seq.name} · câu ${seq.ids.indexOf(q.id) + 1}/${seq.ids.length}` : ''}</span></p>
       <div class="card qcard">
-        <div class="row"><span class="tag">Part ${q.part}</span>${improveFrom ? html`<span class="tag owner">Cải thiện câu</span>` : ''}<span class="spacer"></span>
+        <div class="row"><span class="tag">Part ${q.part}</span>${q.followup ? html`<span class="tag owner">Câu hỏi thêm theo câu chuyện của bạn</span>` : ''}${improveFrom ? html`<span class="tag owner">Cải thiện câu</span>` : ''}<span class="spacer"></span>
           <button class="icon-btn" id="replay" aria-label="Nghe lại câu hỏi">${raw(ICON.speaker)}</button></div>
         <div id="qtext" class="qbig ${q.part === 2 ? '' : 'blurred'}">${q.text}</div>
         ${q.part === 2 ? html`<div class="cuecard"><b>You should say:</b><ul>${q.cue_points.map((c) => html`<li>${c}</li>`)}</ul></div>` : ''}
@@ -87,11 +121,39 @@
       <div class="row side-actions">
         <button class="btn" id="samples">💡 Cho mình câu mẫu</button>
         <button class="btn" id="hist">🕘 Lịch sử câu này</button>
-        ${nextQ ? html`<a class="btn" href="#/q/${nextQ.id}?topic=1">Câu tiếp theo →</a>` : ''}
+        <span id="nextbox"></span>
       </div>
       <div id="extra"></div>
     </div>`);
     const stage = m.querySelector('#stage');
+    function renderNext(primary) {
+      const s = seq && Seq.get();
+      const box = m.querySelector('#nextbox');
+      if (!s) { box.innerHTML = ''; return; }
+      const i = s.ids.indexOf(q.id), nx = s.ids[i + 1];
+      m.querySelector('#seqpos').textContent = ` · ${s.name} · câu ${i + 1}/${s.ids.length}`;
+      box.innerHTML = nx ? html`<a class="btn ${primary ? 'primary' : ''}" href="#/q/${nx}?seq=1">Câu tiếp theo →</a>`.__html : html`<span class="tag">Hết chuỗi ${s.ids.length} câu 🎉</span>`.__html;
+    }
+    renderNext(false);
+    // Sau khi chấm Part 2: lấy 2 câu hỏi thêm AI đặt theo câu chuyện vừa kể.
+    async function afterPart2(attempt) {
+      let fu = [];
+      try { fu = await Api.call('followUps', { attempt_id: attempt.attempt_id }); } catch (e) { /* bỏ qua */ }
+      const box = m.querySelector('#extra');
+      if (seq) {
+        if (fu.length) { Seq.insertAfter(q.id, fu.map((x) => x.id)); box.innerHTML = html`<div class="notice">🗣️ Giám khảo có <b>${fu.length} câu hỏi thêm</b> dựa trên chính câu chuyện của bạn — giống thi thật, để kiểm tra bạn không nói bài học thuộc. Bấm <b>Câu tiếp theo</b> để trả lời.</div>`.__html; }
+        return renderNext(true);
+      }
+      box.innerHTML = html`<div class="card modebar"><div><b>Sang Part 3 như thi thật</b><small class="muted">${fu.length ? `${fu.length} câu hỏi thêm theo câu chuyện của bạn, rồi ` : ''}các câu Part 3 cùng chủ đề trong forecast.</small></div><button class="btn primary" id="to3">Sang Part 3 →</button></div>`.__html;
+      box.querySelector('#to3').onclick = async () => {
+        try {
+          const r = await Api.call('practiceSet', { mode: 'p2p3', p2_id: q.id });
+          const ids = fu.map((x) => x.id).concat(r.ids.slice(1));
+          if (!ids.length) return toast('Cue card này chưa có câu Part 3');
+          Seq.start('Part 2 → Part 3', ids, { p2_id: q.id });
+        } catch (e) { toast(e.message); }
+      };
+    }
     const setPhase = (p) => m.querySelectorAll('.phases span').forEach((s) => s.classList.toggle('on', s.dataset.ph === p));
     let rec = null, live = null, timer = 0, notes = '';
     App.cleanup = () => { clearInterval(timer); if (rec) rec.cancel(); if (live) live.stop(); Speech.stop(); };
@@ -191,6 +253,7 @@
         stage.querySelector('#again').onclick = () => { stage.classList.remove('done'); m.querySelector('#result').innerHTML = ''; ready(); };
         HSResult.render(m.querySelector('#result'), g, resultOpts(q, g));
         m.querySelector('#result').scrollIntoView({ behavior: 'smooth' });
+        if (q.part === 2 && g.status === 'done') afterPart2(g); else renderNext(true);
       } catch (e) {
         stage.innerHTML = html`<div class="notice bad">${e.message}</div><p class="center"><button class="btn" id="retry">Thử lại</button></p>`.__html;
         stage.querySelector('#retry').onclick = ready;

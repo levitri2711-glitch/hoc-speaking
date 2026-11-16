@@ -40,7 +40,9 @@
     return App.qs;
   }
   App.questions = questions;
-  App.question = async (id) => (await questions()).find((q) => q.id === id) || (await questions(true)).find((q) => q.id === id);
+  // Câu follow-up (AI viết theo câu chuyện Part 2) không nằm trong danh sách → hỏi riêng máy chủ.
+  App.question = async (id) => (await questions()).find((q) => q.id === id)
+    || (/^fu_/.test(id) ? await Api.call('getQuestion', { id }) : (await questions(true)).find((q) => q.id === id));
 
   // ---------- Đăng nhập ----------
   function viewLogin(msg) {

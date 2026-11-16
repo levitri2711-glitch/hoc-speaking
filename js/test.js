@@ -14,7 +14,7 @@
     const open = tests.find((t) => t.status === 'in_progress');
     const m = App.shell('test', html`<div class="narrow"><h1>Thi thử full</h1>
       <div class="card">
-        <p>Mô phỏng phòng thi 11–14 phút: <b>Part 1</b> (3 chủ đề, 9–12 câu) → <b>Part 2</b> (1 phút chuẩn bị, nói 1–2 phút) → <b>Part 3</b> (4–5 câu thảo luận cùng chủ đề).</p>
+        <p>Mô phỏng phòng thi 11–14 phút: <b>Part 1</b> (3 chủ đề, 9–12 câu) → <b>Part 2</b> (1 phút chuẩn bị, nói 1–2 phút) → 1–2 <b>câu hỏi thêm</b> giám khảo đặt theo chính câu chuyện bạn vừa kể (chống học thuộc) → <b>Part 3</b> (4–5 câu thảo luận cùng chủ đề).</p>
         <ul class="small muted"><li>Không hiện điểm giữa chừng; chấm tổng 4 tiêu chí (band nguyên như thi thật) khi nộp bài.</li>
           <li>Thoát giữa chừng thì bài không được chấm.</li><li>Cần nơi yên tĩnh, micro ổn định. Tốn 1 lượt chấm.</li></ul>
         <label class="field"><span>Đề theo quý forecast</span><select class="input" id="qt"><option value="">Ngẫu nhiên mọi quý</option>${quarters.map((x) => html`<option value="${x}">${x.replace('2026Q', 'Quý ')}/2026</option>`)}</select></label>
@@ -48,7 +48,7 @@
     async function step() {
       if (idx >= steps.length) return submit();
       const s = steps[idx];
-      m.querySelector('#ptitle').textContent = 'Part ' + s.part;
+      m.querySelector('#ptitle').textContent = s.label || 'Part ' + s.part;
       m.querySelector('#pcount').textContent = `Câu ${idx + 1}/${steps.length}`;
       m.querySelector('#pl').style.width = (idx / steps.length * 100) + '%';
       if (s.part === 2) {
@@ -86,8 +86,20 @@
         const { blob, seconds } = await r0.stop();
         if (s.part === 2) await Speech.say('Thank you.');
         // Gửi nền, không chờ — để bài thi chạy liền mạch.
-        uploads.push(Recorder.toWav16k(blob).then(({ b64 }) => Api.call('submitAttempt', { question_id: s.q.id, test_id: t.test_id, mode: 'test', audio_b64: b64, mime: 'audio/wav', duration: seconds }))
-          .catch((e) => ({ error: e.message, step: s })));
+        const up = Recorder.toWav16k(blob).then(({ b64 }) => Api.call('submitAttempt', { question_id: s.q.id, test_id: t.test_id, mode: 'test', audio_b64: b64, mime: 'audio/wav', duration: seconds }))
+          .catch((e) => ({ error: e.message, step: s }));
+        uploads.push(up);
+        if (s.part === 2) {
+          // Như thi thật: giám khảo hỏi thêm 1–2 câu dựa trên chính câu chuyện vừa kể (chống học thuộc).
+          st.innerHTML = '<p class="center muted"><span class="spin"></span> Giám khảo đang xem lại phần trình bày của bạn…</p>';
+          try {
+            const a = await up;
+            if (a && a.attempt_id) {
+              const fu = await Api.call('testFollowUps', { test_id: t.test_id, attempt_id: a.attempt_id });
+              steps.splice(idx + 1, 0, ...fu.map((q) => ({ q, part: 3, label: 'Part 2 – câu hỏi thêm', intro: '' })));
+            }
+          } catch (e) { /* không có câu hỏi thêm thì thi tiếp */ }
+        }
         idx++;
         step();
       }
