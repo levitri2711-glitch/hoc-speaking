@@ -194,7 +194,7 @@
       <form class="card" id="cf">
         <h2 style="margin-top:0">Chấm AI (Gemini miễn phí)</h2>
         ${row('ai_enabled', 'Bật chấm AI', 'Tắt = bài vẫn được lưu, vào hàng chờ.', 'bool')}
-        ${row('ai_model', 'Model chính', 'Mặc định gemini-2.5-flash')}${row('ai_model_fallback', 'Model dự phòng (khi model chính quá tải)', 'Mặc định gemini-2.5-flash-lite')}
+        ${row('ai_model', 'Model chính', 'Mặc định gemini-3.5-flash')}${row('ai_model_fallback', 'Model dự phòng (khi model chính quá tải)', 'Mặc định gemini-3.5-flash-lite')}
         ${row('system_daily_cap', 'Trần lượt chấm toàn hệ thống / ngày', 'Giữ dưới hạn mức miễn phí của Google. 0 = không giới hạn.')}
         ${row('daily_quota_learner', 'Lượt chấm / ngày mỗi Học viên', 'Đặt riêng từng người ở tab Người dùng.')}${row('daily_quota_editor', 'Lượt chấm / ngày mỗi Editor')}
         ${row('review_examples', 'Số ví dụ hiệu chỉnh của giáo viên đưa vào lời nhắc chấm', '0 = tắt hiệu chỉnh.')}
