@@ -199,6 +199,7 @@
         ${row('daily_quota_learner', 'Lượt chấm / ngày mỗi Học viên', 'Đặt riêng từng người ở tab Người dùng.')}${row('daily_quota_editor', 'Lượt chấm / ngày mỗi Editor')}
         ${row('review_examples', 'Số ví dụ hiệu chỉnh của giáo viên đưa vào lời nhắc chấm', '0 = tắt hiệu chỉnh.')}
         <h2>Chung</h2>
+        ${row('audio_retention_days', 'Tự xoá file ghi âm sau (ngày)', 'Mặc định 180; kết quả chấm vẫn giữ. 0 = không tự xoá (Drive có thể đầy 15 GB miễn phí).')}
         ${row('default_target_band', 'Band mục tiêu mặc định')}
         ${row('invite_only', 'Thử nghiệm kín (chỉ email được mời mới đăng nhập)', '', 'bool')}${row('notify_editors_on_access', 'Báo cả Editor khi có người xin quyền', '', 'bool')}
         ${row('vocab_spreadsheet_id', 'ID Google Sheets "Học từ vựng – CSDL" (liên thông, chỉ đọc)', 'Lấy trong link: docs.google.com/spreadsheets/d/<ID>/edit')}
