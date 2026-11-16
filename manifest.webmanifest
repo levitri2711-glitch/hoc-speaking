@@ -1,0 +1,12 @@
+{
+  "name": "Học speaking",
+  "short_name": "Speaking",
+  "description": "Luyện và chấm chữa IELTS Speaking theo band descriptors.",
+  "lang": "vi",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
