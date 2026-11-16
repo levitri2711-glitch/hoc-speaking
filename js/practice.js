@@ -186,8 +186,9 @@
         stage.innerHTML = '<p class="center muted"><span class="spin"></span> Giám khảo đang nghe và chấm (thường 15–40 giây)…</p>';
         const g = await Api.call('gradeAttempt', { attempt_id: a.attempt_id });
         App.qs = null;
+        stage.classList.add('done');
         stage.innerHTML = html`<div class="row"><b>Đã chấm xong</b><span class="spacer"></span><button class="btn sm" id="again">↻ Trả lời lại</button></div>`.__html;
-        stage.querySelector('#again').onclick = () => { m.querySelector('#result').innerHTML = ''; ready(); };
+        stage.querySelector('#again').onclick = () => { stage.classList.remove('done'); m.querySelector('#result').innerHTML = ''; ready(); };
         HSResult.render(m.querySelector('#result'), g, resultOpts(q, g));
         m.querySelector('#result').scrollIntoView({ behavior: 'smooth' });
       } catch (e) {

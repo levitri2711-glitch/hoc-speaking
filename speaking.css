@@ -49,6 +49,7 @@
 .phases span { flex: 1; text-align: center; font-size: 13px; padding: 4px; border-bottom: 3px solid var(--border); color: var(--muted); }
 .phases span.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .stage { min-height: 150px; }
+.stage.done { min-height: 0; }
 .recbtn { width: 84px; height: 84px; border-radius: 50%; border: 0; background: var(--b-low); color: #fff; cursor: pointer; display: inline-grid; place-items: center; box-shadow: 0 4px 18px rgba(220, 38, 38, .35); }
 .recbtn svg { width: 36px; height: 36px; }
 .recbtn:hover { transform: scale(1.04); }

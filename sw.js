@@ -1,5 +1,5 @@
 // Service worker: lưu giao diện để mở nhanh/khi mạng chập chờn; không lưu dữ liệu gọi máy chủ (POST) hay tài nguyên ngoài.
-const VERSION = 'hs-shell-v3';
+const VERSION = 'hs-shell-v4';
 const SHELL = ['./', 'index.html', 'app.css', 'speaking.css', 'config.js', 'icon.svg', 'manifest.webmanifest',
   'js/lib.js', 'js/legal.js', 'js/app.js', 'js/result.js', 'js/practice.js', 'js/test.js', 'js/manage.js'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
