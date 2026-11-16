@@ -139,8 +139,8 @@
           <span class="small muted">Dùng giọng có sẵn của trình duyệt: Chrome là giọng Google, Safari là giọng Apple.</span></label>
         <label class="field"><span>Tốc độ đọc</span><select class="input" name="rate"><option value="0.85">Chậm</option><option value="0.95" selected>Vừa (như phòng thi)</option><option value="1.05">Nhanh</option></select></label>
         <div class="notice warn small">3. <b>Dữ liệu giọng nói:</b> bản ghi âm của bạn được lưu trên Google Drive của giáo viên và gửi tới Google Gemini để chấm điểm. Máy chủ của Google có thể đặt ở nước ngoài (chuyển dữ liệu ra nước ngoài). Ở gói miễn phí, Google có thể dùng dữ liệu gửi lên để cải thiện dịch vụ và người kiểm duyệt của Google có thể nghe/đọc. Không nói thông tin nhạy cảm (số giấy tờ, địa chỉ cụ thể, sức khoẻ…) trong bài. File ghi âm tự xoá sau 180 ngày; bạn có thể xoá từng bài hoặc toàn bộ dữ liệu bất cứ lúc nào.</div>
-        <label class="row small"><input type="checkbox" name="age18" required> Tôi đủ 18 tuổi trở lên.</label>
-        <label class="row small"><input type="checkbox" name="agree" required> Tôi đã đọc <a href="#/legal/terms" target="_blank">Điều khoản</a>, <a href="#/legal/privacy" target="_blank">Chính sách bảo mật</a> và đồng ý cho xử lý dữ liệu cá nhân (email, giọng nói, kết quả chấm) như mô tả ở trên.</label>
+        <label class="row small"><input type="checkbox" name="age18" required><span>Tôi đủ 18 tuổi trở lên.</span></label>
+        <label class="row small" style="align-items:flex-start"><input type="checkbox" name="agree" required><span>Tôi đã đọc <a href="#/legal/terms" target="_blank">Điều khoản</a>, <a href="#/legal/privacy" target="_blank">Chính sách bảo mật</a> và đồng ý cho xử lý dữ liệu cá nhân (email, giọng nói, kết quả chấm) như mô tả ở trên.</span></label>
         <p><button class="btn primary">Bắt đầu luyện</button></p>
       </form></div>`);
     const f = m.querySelector('#wf');
