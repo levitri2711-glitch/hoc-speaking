@@ -104,11 +104,14 @@
     const box = el.querySelector('#ractions');
     if (!box) return;
     const parts = [];
-    if (a.has_audio) parts.push('<button class="btn" data-act="audio">▶ Nghe lại bài mình</button>');
-    if (opts.onRetry) parts.push('<button class="btn" data-act="retry">↻ Làm lại</button>');
-    if (opts.onImprove && a.status === 'done') parts.push('<button class="btn primary" data-act="improve">Cải thiện câu (nói lại bản đã sửa)</button>');
-    if (a.status === 'queued' || a.status === 'error') parts.push('<button class="btn" data-act="regrade">Chấm lại ngay</button>');
-    if (opts.canDelete) parts.push('<button class="btn danger" data-act="del">Xoá bài này</button>');
+    // Một việc chính (Cải thiện câu), các việc phụ nhỏ gọn bên dưới.
+    if (opts.onImprove && a.status === 'done') parts.push('<button class="btn primary act-main" data-act="improve">Nói lại bản đã sửa</button>');
+    if (a.status === 'queued' || a.status === 'error') parts.push('<button class="btn primary act-main" data-act="regrade">Chấm lại ngay</button>');
+    const sub = [];
+    if (a.has_audio) sub.push('<button class="btn sm ghost" data-act="audio">▶ Nghe lại bài mình</button>');
+    if (opts.onRetry) sub.push('<button class="btn sm ghost" data-act="retry">↻ Làm lại</button>');
+    if (opts.canDelete) sub.push('<button class="btn sm ghost danger" data-act="del">Xoá</button>');
+    if (sub.length) parts.push('<div class="act-sub">' + sub.join('') + '</div>');
     box.innerHTML = parts.join('');
     box.onclick = async (e) => {
       const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;

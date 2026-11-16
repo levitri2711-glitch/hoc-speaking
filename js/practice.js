@@ -27,6 +27,8 @@
     try { const r = await Api.call('practiceSet', { mode: 'p2p3', p2_id: p2Id || '' }); Seq.start(r.name, r.ids, { p2_id: r.p2_id }); } catch (e) { toast(e.message); }
   }
 
+  App.Seq = Seq; App.startP2P3 = startP2P3;
+
   // ---------- Luyện Forecast ----------
   App.route(/^#\/practice(?:\/(\w+))?$/, async (tab) => {
     App.loading('practice');
@@ -48,18 +50,18 @@
       const sel = LS.get('hs.topic.' + tab, '');
       const cur = byTopic[sel] ? sel : topics[0];
       const m = App.shell('practice', html`
-        <div class="row"><h1 style="margin-right:auto">Luyện Forecast</h1>${App.can.learn() ? html`<a class="btn sm" href="#/add">+ Thêm câu hỏi</a>` : ''}</div>
-        <div class="seg" role="tablist">${[['1', 'Part 1'], ['2', 'Part 2'], ['3', 'Part 3'], ['mine', 'Câu bạn thêm']].map(([k, l]) => html`<a href="#/practice/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`)}</div>
-        ${App.can.learn() && tab === '1' ? html`<div class="modebar card"><div><b>🎲 Part 1 như thi thật</b><small class="muted">3 chủ đề ngẫu nhiên (1 chủ đề mở đầu: học/làm/quê/nhà), mỗi chủ đề 3–4 câu, hỏi liên tiếp.</small></div><button class="btn primary" id="p1exam">Bắt đầu</button></div>` : ''}
-        ${App.can.learn() && tab === '2' ? html`<div class="modebar card"><div><b>🎲 Part 2 → Part 3 ngẫu nhiên</b><small class="muted">1 cue card ngẫu nhiên → 2 câu hỏi thêm AI đặt theo chính câu chuyện bạn kể → các câu Part 3 cùng chủ đề trong forecast.</small></div><button class="btn primary" id="p2rand">Bắt đầu</button></div>` : ''}
+        <div class="row"><h1 style="margin-right:auto">Luyện Forecast</h1>${App.can.learn() ? html`<a class="btn sm ghost" href="#/add">+ Thêm câu</a>` : ''}</div>
+        <div class="tabsrow"><div class="seg" role="tablist">${[['1', 'Part 1'], ['2', 'Part 2'], ['3', 'Part 3'], ['mine', 'Của bạn']].map(([k, l]) => html`<a href="#/practice/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`)}</div>
+          ${App.can.learn() && tab === '1' ? html`<button class="btn sm primary" id="p1exam" title="3 chủ đề ngẫu nhiên, 9–12 câu liên tiếp">${raw(ICON.dice)} Như thi thật</button>` : ''}
+          ${App.can.learn() && tab === '2' ? html`<button class="btn sm primary" id="p2rand" title="Cue card ngẫu nhiên → câu hỏi thêm theo câu chuyện → Part 3">${raw(ICON.dice)} Ngẫu nhiên → Part 3</button>` : ''}</div>
         <div class="filters row">
           <select class="input sm" id="fq"><option value="">Mọi quý</option>${quarters.map((x) => html`<option value="${x}" ${x === f.quarter ? 'selected' : ''}>${x.replace('2026Q', 'Quý ')}/2026</option>`)}</select>
           <select class="input sm" id="fs"><option value="">Tất cả</option><option value="new" ${f.status === 'new' ? 'selected' : ''}>Chưa luyện</option><option value="low" ${f.status === 'low' ? 'selected' : ''}>Dưới mục tiêu</option>${App.can.edit() ? html`<option value="review" ${f.status === 'review' ? 'selected' : ''}>Cần sửa (OCR)</option>` : ''}</select>
-          <input class="input sm" id="fx" placeholder="Tìm câu hỏi / topic" value="${f.q}" style="flex:1;min-width:160px">
+          <input class="input sm" id="fx" type="search" placeholder="Tìm câu hỏi hoặc chủ đề" value="${f.q}">
         </div>
-        ${list.length ? html`<div class="split">
+        ${list.length ? html`<select class="input topic-select" id="tsel" aria-label="Chủ đề">${topics.map((tp) => html`<option value="${tp}" ${tp === cur ? 'selected' : ''}>${tp} (${byTopic[tp].filter((q) => q.practiced).length}/${byTopic[tp].length})</option>`)}</select><div class="split">
           <aside class="topics" aria-label="Chủ đề">${topics.map((tp) => html`<button class="topic ${tp === cur ? 'on' : ''}" data-tp="${tp}"><span>${tp}</span><small>${byTopic[tp].filter((q) => q.practiced).length}/${byTopic[tp].length}</small></button>`)}</aside>
-          <section id="qpane"></section></div>` : html`<p class="muted">Không có câu nào khớp bộ lọc.${tab === 'mine' ? ' Thêm câu riêng ở nút "+ Thêm câu hỏi" hoặc tạo từ bộ từ vựng.' : ''}</p>`}`);
+          <section id="qpane"></section></div>` : html`<p class="muted">Không có câu nào khớp bộ lọc.${tab === 'mine' ? ' Thêm câu riêng ở nút "+ Thêm câu hỏi" hoặc tạo từ bộ từ vựng.' : ''}</p>`}`, { wide: true });
       const p1b = m.querySelector('#p1exam');
       if (p1b) p1b.onclick = async () => { try { const r = await Api.call('practiceSet', { mode: 'p1_exam', quarter: f.quarter }); Seq.start(r.name, r.ids); } catch (e) { toast(e.message); } };
       const p2b = m.querySelector('#p2rand');
@@ -73,9 +75,9 @@
         m.querySelectorAll('.topic').forEach((b) => b.classList.toggle('on', b.dataset.tp === tp));
         const qsT = byTopic[tp] || [];
         const canSeq = App.can.learn();
-        pane.innerHTML = html`<div class="row"><h2 style="margin:0 auto 0 0">${tp}</h2>
-          ${canSeq && tab !== '2' && qsT.length > 1 ? html`<button class="btn sm" id="tseq">▶ Lần lượt</button><button class="btn sm primary" id="trand">🎲 Hỏi ngẫu nhiên</button>` : ''}
-          ${canSeq && tab === '2' && qsT.length ? html`<button class="btn sm primary" id="tp23">▶ Part 2 → Part 3</button>` : ''}</div>
+        pane.innerHTML = html`<div class="row panehead"><h2 class="tp-title">${tp}</h2>
+          ${canSeq && tab !== '2' && qsT.length > 1 ? html`<button class="btn sm" id="tseq">${raw(ICON.play)} Lần lượt</button><button class="btn sm" id="trand">${raw(ICON.dice)} Hỏi ngẫu nhiên</button>` : ''}
+          ${canSeq && tab === '2' && qsT.length ? html`<button class="btn sm" id="tp23">${raw(ICON.link)} Part 2 → Part 3</button>` : ''}</div>
           <div class="qlist">${qsT.map((q) => html`<a class="qrow card" href="#/q/${q.id}">
             <span class="qtext">${q.text}${q.part === 2 && q.cue_points.length ? html`<small class="muted cue">${q.cue_points.join(' · ')}</small>` : ''}
             ${q.needs_review ? html`<small class="tag">cần sửa</small>` : ''}</span>
@@ -84,9 +86,11 @@
         if (bs) bs.onclick = () => Seq.start('Lần lượt', qsT.map((q) => q.id));
         if (br) br.onclick = () => Seq.start('Ngẫu nhiên', shuffle(qsT).slice(0, 6).map((q) => q.id));
         if (b23) b23.onclick = () => startP2P3(qsT[0].id);
-        if (window.innerWidth < 760) pane.scrollIntoView({ behavior: 'smooth' });
+        if (tsel) tsel.value = tp;
       };
       m.querySelectorAll('.topic').forEach((b) => { b.onclick = () => show(b.dataset.tp); });
+      const tsel = m.querySelector('#tsel');
+      if (tsel) tsel.onchange = () => show(tsel.value);
       if (cur) show(cur);
     } catch (e) { App.fail('practice', e); }
   });
@@ -104,34 +108,37 @@
     const improveFrom = params.get('from');
     let improveText = '';
     if (improveFrom) { try { const a = await Api.call('getAttempt', { attempt_id: improveFrom }); improveText = (a.result && a.result.model_answer) || ''; } catch (e) { /* bỏ qua */ } }
+    const back = '#/practice/' + (q.custom ? 'mine' : q.part);
     const m = App.shell('practice', html`<div class="narrow practice">
-      <p class="crumbs small"><a href="#/practice/${q.custom ? 'mine' : q.part}">← ${PART_NAME[q.part]}</a> · ${q.topic}<span id="seqpos">${seq ? ` · ${seq.name} · câu ${seq.ids.indexOf(q.id) + 1}/${seq.ids.length}` : ''}</span></p>
+      ${seq ? html`<div class="seqbar"><span class="small muted" id="seqpos">Câu ${seq.ids.indexOf(q.id) + 1}/${seq.ids.length}</span><div class="progress-line"><i id="seqpl" style="width:${(seq.ids.indexOf(q.id) + 1) / seq.ids.length * 100}%"></i></div></div>` : ''}
       <div class="card qcard">
-        <div class="row"><span class="tag">Part ${q.part}</span>${q.followup ? html`<span class="tag owner">Câu hỏi thêm theo câu chuyện của bạn</span>` : ''}${improveFrom ? html`<span class="tag owner">Cải thiện câu</span>` : ''}<span class="spacer"></span>
+        <div class="row"><span class="small muted qtopic">${q.topic}</span>${q.followup ? html`<span class="tag owner">Câu hỏi thêm theo câu chuyện của bạn</span>` : ''}${improveFrom ? html`<span class="tag owner">Cải thiện câu</span>` : ''}<span class="spacer"></span>
           <button class="icon-btn" id="replay" aria-label="Nghe lại câu hỏi">${raw(ICON.speaker)}</button></div>
         <div id="qtext" class="qbig ${q.part === 2 ? '' : 'blurred'}">${q.text}</div>
         ${q.part === 2 ? html`<div class="cuecard"><b>You should say:</b><ul>${q.cue_points.map((c) => html`<li>${c}</li>`)}</ul></div>` : ''}
         ${q.target_words && q.target_words !== '[]' ? html`<p class="small">Từ mục tiêu: <b>${JSON.parse(q.target_words).join(', ')}</b></p>` : ''}
-        <button class="btn sm ghost" id="reveal" ${q.part === 2 ? 'hidden' : ''}>Hiện chữ câu hỏi</button>
+        <button class="btn sm ghost" id="reveal" ${q.part === 2 ? 'hidden' : ''}>Hiện chữ câu hỏi</button><small class="muted reveal-hint" ${q.part === 2 ? 'hidden' : ''}>Câu hỏi bị làm mờ để bạn luyện nghe như thi thật.</small>
       </div>
       ${improveText ? html`<details class="card" open><summary><b>Bản đã sửa để nói lại</b></summary><p class="model">${improveText}</p><button class="btn sm" id="sayimp">${raw(ICON.speaker)} Nghe</button></details>` : ''}
       <div class="phases"><span data-ph="listen">1. Nghe</span><span data-ph="prep">2. Chuẩn bị</span><span data-ph="speak">3. Trả lời</span><span data-ph="grade">4. Chấm</span></div>
       <div id="stage" class="card stage"></div>
       <div id="result"></div>
-      <div class="row side-actions">
-        <button class="btn" id="samples">💡 Cho mình câu mẫu</button>
-        <button class="btn" id="hist">🕘 Lịch sử câu này</button>
+      <div class="side-actions">
+        <button class="btn sm ghost" id="samples">💡 Câu mẫu</button>
+        <button class="btn sm ghost" id="hist">🕘 Lịch sử</button>
+        <span class="spacer"></span>
         <span id="nextbox"></span>
       </div>
       <div id="extra"></div>
-    </div>`);
+    </div>`, { focus: { back, title: seq ? seq.name : 'Part ' + q.part + ' · ' + q.topic } });
     const stage = m.querySelector('#stage');
     function renderNext(primary) {
       const s = seq && Seq.get();
       const box = m.querySelector('#nextbox');
       if (!s) { box.innerHTML = ''; return; }
       const i = s.ids.indexOf(q.id), nx = s.ids[i + 1];
-      m.querySelector('#seqpos').textContent = ` · ${s.name} · câu ${i + 1}/${s.ids.length}`;
+      m.querySelector('#seqpos').textContent = `Câu ${i + 1}/${s.ids.length}`;
+      m.querySelector('#seqpl').style.width = ((i + 1) / s.ids.length * 100) + '%';
       box.innerHTML = nx ? html`<a class="btn ${primary ? 'primary' : ''}" href="#/q/${nx}?seq=1">Câu tiếp theo →</a>`.__html : html`<span class="tag">Hết chuỗi ${s.ids.length} câu 🎉</span>`.__html;
     }
     renderNext(false);
@@ -158,7 +165,7 @@
     let rec = null, live = null, timer = 0, notes = '';
     App.cleanup = () => { clearInterval(timer); if (rec) rec.cancel(); if (live) live.stop(); Speech.stop(); };
     m.querySelector('#replay').onclick = () => Speech.say(q.text);
-    m.querySelector('#reveal').onclick = (e) => { m.querySelector('#qtext').classList.remove('blurred'); e.target.hidden = true; };
+    m.querySelector('#reveal').onclick = (e) => { m.querySelector('#qtext').classList.remove('blurred'); e.target.hidden = true; const h = m.querySelector('.reveal-hint'); if (h) h.hidden = true; };
     if (m.querySelector('#sayimp')) m.querySelector('#sayimp').onclick = () => Speech.say(improveText);
 
     // Câu mẫu: chỉ mở sau khi đã trả lời câu này ít nhất 1 lần (máy chủ kiểm tra).
@@ -249,8 +256,9 @@
         const g = await Api.call('gradeAttempt', { attempt_id: a.attempt_id });
         App.qs = null;
         stage.classList.add('done');
+        m.querySelector('.phases').hidden = true;
         stage.innerHTML = html`<div class="row"><b>Đã chấm xong</b><span class="spacer"></span><button class="btn sm" id="again">↻ Trả lời lại</button></div>`.__html;
-        stage.querySelector('#again').onclick = () => { stage.classList.remove('done'); m.querySelector('#result').innerHTML = ''; ready(); };
+        stage.querySelector('#again').onclick = () => { stage.classList.remove('done'); m.querySelector('.phases').hidden = false; m.querySelector('#result').innerHTML = ''; ready(); };
         HSResult.render(m.querySelector('#result'), g, resultOpts(q, g));
         m.querySelector('#result').scrollIntoView({ behavior: 'smooth' });
         if (q.part === 2 && g.status === 'done') afterPart2(g); else renderNext(true);
@@ -371,8 +379,8 @@
       const [list, st, tests] = await Promise.all([Api.call('myAttempts', { limit: 300 }), Api.call('myStats', {}), Api.call('myTests')]);
       const t = App.target();
       App.shell('history', html`<h1>Tiến bộ của tôi</h1>
-        <div class="stats"><div class="card stat"><span class="muted small">Bài đã chấm</span><b>${st.attempts}</b></div><div class="card stat"><span class="muted small">Chuỗi ngày</span><b>${st.streak} 🔥</b></div>
-          <div class="card stat"><span class="muted small">Bài thi thử</span><b>${tests.length}</b></div><div class="card stat"><span class="muted small">Mục tiêu</span><b>${band(t)}</b></div></div>
+        <div class="strip"><div><small>Đã chấm</small><b>${st.attempts}</b></div><div><small>Chuỗi ngày</small><b>${st.streak}${st.streak ? ' 🔥' : ''}</b></div>
+          <div><small>Thi thử</small><b>${tests.length}</b></div><div><small>Mục tiêu</small><b>${band(t)}</b></div></div>
         <h2>Band theo tuần</h2><div class="card">${raw(chart(st.series, t))}</div>
         ${st.top_errors.length ? html`<h2>Lỗi lặp lại nhiều nhất</h2><div class="card"><ol class="small" style="margin:0;padding-left:20px">${st.top_errors.map((e) => html`<li>${e.error} <span class="muted">(${e.count} lần)</span></li>`)}</ol></div>` : ''}
         ${tests.length ? html`<h2>Thi thử</h2><div class="qlist">${tests.map((x) => html`<a class="qrow card" href="#/test/${x.test_id}"><span>${fmtDate(x.created_at)} · ${({ in_progress: 'đang làm', queued: 'chờ chấm', graded: 'đã chấm', error: 'lỗi', unscorable: 'không chấm được' })[x.status] || x.status}</span><span class="bandbadge ${bandClass(x.overall, t)}">${band(x.overall)}</span></a>`)}</div>` : ''}

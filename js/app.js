@@ -18,17 +18,41 @@
   App.target = () => (App.user && Number(App.user.target_band)) || 6.5;
 
   // ---------- Khung ----------
-  function shell(active, body) {
-    const links = [['#/', 'Trang chủ', 'home'], ['#/practice', 'Luyện Forecast', 'practice']];
-    if (can.learn()) links.push(['#/test', 'Thi thử', 'test'], ['#/vocab', 'Từ vựng của tôi', 'vocab'], ['#/history', 'Lịch sử', 'history']);
-    if (can.edit()) links.push(['#/teacher', 'Giáo viên', 'teacher'], ['#/admin', 'Quản trị', 'admin']);
-    links.push(['#/settings', 'Cài đặt', 'settings']);
+  // Khung tối giản: máy tính = thanh trên (4 mục chính + menu "Thêm"); điện thoại = thanh dưới.
+  // opts.focus = { back, title }: chế độ tập trung (trả lời câu / đang thi) — ẩn menu, chỉ còn nút quay lại.
+  function shell(active, body, opts) {
+    opts = opts || {};
+    const main = [['#/', 'Trang chủ', 'home', 'home'], ['#/practice', 'Luyện', 'practice', 'target']];
+    if (can.learn()) main.push(['#/test', 'Thi thử', 'test', 'timer'], ['#/history', 'Tiến bộ', 'history', 'chart']);
+    const more = [];
+    if (can.learn()) more.push(['#/vocab', 'Từ vựng của tôi', 'vocab', 'book']);
+    if (can.edit()) more.push(['#/teacher', 'Giáo viên', 'teacher', 'teach'], ['#/admin', 'Quản trị', 'admin', 'shield']);
+    more.push(['#/settings', 'Cài đặt', 'settings', 'gear']);
+    const inMore = more.some((x) => x[2] === active);
+    const I = (k) => HS.ICON[k] || '';
+    const f = opts.focus;
+    $app().className = f ? 'is-focus' : '';
     $app().innerHTML = `
       <header class="topbar">
-        <a class="brand" href="#/">Học speaking</a>
-        <nav class="nav" aria-label="Điều hướng chính">${links.map(([h, t, k]) => `<a href="${h}" class="${k === active ? 'active' : ''}">${t}</a>`).join('')}</nav>
+        ${f ? `<a class="iconlink" href="${esc(f.back || '#/')}" aria-label="Quay lại">${I('back')}</a><span class="topbar-title">${esc(f.title || '')}</span>`
+    : `<a class="brand" href="#/"><span class="logo" aria-hidden="true">${I('target')}</span>Học speaking</a>
+        <nav class="nav" aria-label="Điều hướng chính">${main.map(([h, t, k]) => `<a href="${h}" class="${k === active ? 'active' : ''}">${t}</a>`).join('')}</nav>
+        <button class="iconlink menu-btn ${inMore ? 'active' : ''}" id="menuBtn" aria-label="Thêm" aria-expanded="false">${I('more')}</button>`}
       </header>
-      <main id="main">${body && body.__html !== undefined ? body.__html : body}</main>`;
+      ${f ? '' : `<nav class="tabbar" aria-label="Điều hướng">${main.map(([h, t, k, ic]) => `<a href="${h}" class="${k === active ? 'active' : ''}">${I(ic)}<span>${t}</span></a>`).join('')}
+        <button class="${inMore ? 'active' : ''}" id="menuBtn2" aria-label="Thêm">${I('more')}<span>Thêm</span></button></nav>
+      <div class="menu" id="menu" hidden><div class="menu-card">
+        <div class="menu-who small muted">${esc(App.user ? App.user.email : '')}${App.user ? ' · ' + esc(App.user.role_label || '') : ''}</div>
+        ${more.map(([h, t, k, ic]) => `<a href="${h}" class="${k === active ? 'active' : ''}">${I(ic)}<span>${t}</span></a>`).join('')}
+      </div></div>`}
+      <main id="main" class="${opts.wide || active === 'admin' ? 'wide' : ''}">${body && body.__html !== undefined ? body.__html : body}</main>`;
+    const menu = document.getElementById('menu');
+    if (menu) {
+      const toggle = (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+      ['menuBtn', 'menuBtn2'].forEach((id) => { const b = document.getElementById(id); if (b) b.onclick = toggle; });
+      menu.onclick = (e) => { if (e.target === menu || e.target.closest('a')) menu.hidden = true; };
+      document.addEventListener('click', function close(e) { if (!menu.isConnected) return document.removeEventListener('click', close); if (!e.target.closest('.menu-card')) menu.hidden = true; });
+    }
     return document.getElementById('main');
   }
   function loading(active) { return shell(active, '<p class="muted">Đang tải…</p>'); }
@@ -173,25 +197,40 @@
       const quota = usage ? (usage.limit ? `${usage.used_today}/${usage.limit}` : `${usage.used_today} (không giới hạn)`) : '–';
       const last = stats && stats.series.length ? stats.series[stats.series.length - 1] : null;
       const counts = [1, 2, 3].map((p) => qs.filter((q) => q.part === p).length);
-      shell('home', html`
-        <h1>Xin chào${App.user.name ? ', ' + App.user.name : ''}</h1>
-        ${usage && !usage.ai_enabled ? html`<div class="notice bad">Chấm AI đang tạm tắt${usage.cost_guard_reason ? ' (cost-guard)' : ''}. Bài bạn nói vẫn được lưu và sẽ được chấm khi bật lại.</div>` : ''}
-        ${App.user.role === 'viewer' ? html`<div class="notice">Bạn đang ở quyền <b>Viewer</b>: xem câu hỏi và câu mẫu, chưa ghi âm/chấm được. Nhờ giáo viên nâng lên Học viên để luyện.</div>` : ''}
-        ${stats ? html`<div class="stats">
-          <div class="card stat"><span class="muted small">Band mục tiêu</span><b>${band(t)}</b></div>
-          <div class="card stat"><span class="muted small">Overall tuần này</span><b class="${bandClass(last && last.overall, t)}-t">${band(last && last.overall)}</b></div>
-          <div class="card stat"><span class="muted small">Chuỗi ngày luyện</span><b>${stats.streak} 🔥</b></div>
-          <div class="card stat"><span class="muted small">Lượt chấm hôm nay</span><b>${quota}</b></div>
+      const seq = LS.get('hs.seq', null);
+      const I = (k) => raw(HS.ICON[k] || '');
+      const act = (icon, title, desc, attrs) => html`<${attrs.href ? 'a' : 'button'} class="action" ${raw(attrs.href ? `href="${attrs.href}"` : `id="${attrs.id}"`)}>
+        <span class="action-ic">${I(icon)}</span><span class="action-tx"><b>${title}</b><small>${desc}</small></span><span class="action-go">${I('chev')}</span></${attrs.href ? 'a' : 'button'}>`;
+      const m = shell('home', html`
+        <h1>Xin chào${App.user.name ? ', ' + App.user.name : ''} 👋</h1>
+        ${usage && !usage.ai_enabled ? html`<div class="notice bad">Chấm AI đang tạm tắt. Bài bạn nói vẫn được lưu và sẽ được chấm khi bật lại.</div>` : ''}
+        ${App.user.role === 'viewer' ? html`<div class="notice">Bạn đang ở quyền <b>Viewer</b>: xem câu hỏi và câu mẫu. Nhờ quản trị viên nâng lên Học viên để ghi âm và chấm.</div>` : ''}
+        ${stats ? html`<div class="strip">
+          <div><small>Mục tiêu</small><b>${band(t)}</b></div>
+          <div><small>Tuần này</small><b class="${bandClass(last && last.overall, t)}-t">${band(last && last.overall)}</b></div>
+          <div><small>Chuỗi ngày</small><b>${stats.streak}${stats.streak ? ' 🔥' : ''}</b></div>
+          <div><small>Lượt chấm</small><b>${usage && usage.limit ? `${usage.used_today}/${usage.limit}` : (usage ? usage.used_today : '–')}</b></div>
         </div>` : ''}
-        <h2>Bắt đầu</h2>
-        <div class="modes">
-          <a class="btn primary" href="#/practice">🎯 Luyện Forecast</a>
-          ${can.learn() ? html`<a class="btn" href="#/test">⏱ Thi thử full (11–14 phút)</a><a class="btn" href="#/vocab">📚 Luyện theo từ vựng</a><a class="btn" href="#/history">📈 Tiến bộ của tôi</a>` : ''}
+        ${seq && seq.ids && seq.ids.length ? html`<a class="continue card" href="#/q/${seq.ids[0]}?seq=1" id="cont"><span><small class="muted">Đang luyện dở</small><b>${seq.name}</b><small class="muted">${seq.ids.length} câu</small></span><span class="btn primary">Tiếp tục</span></a>` : ''}
+        <h2>Luyện hôm nay</h2>
+        <div class="actions">
+          ${act('target', 'Luyện theo chủ đề', `Chọn câu forecast · ${counts[0]} câu Part 1 · ${counts[1]} cue card · ${counts[2]} câu Part 3`, { href: '#/practice' })}
+          ${can.learn() ? html`
+          ${act('dice', 'Part 1 như thi thật', '3 chủ đề ngẫu nhiên, 9–12 câu hỏi liên tiếp', { id: 'goP1' })}
+          ${act('link', 'Part 2 → Part 3', 'Cue card ngẫu nhiên, câu hỏi thêm theo chính câu chuyện bạn kể, rồi thảo luận Part 3', { id: 'goP23' })}
+          ${act('timer', 'Thi thử full', '11–14 phút như phòng thi, chấm tổng khi nộp bài', { href: '#/test' })}` : ''}
         </div>
-        <p class="small muted">Ngân hàng: ${counts[0]} câu Part 1 · ${counts[1]} cue card Part 2 · ${counts[2]} câu Part 3 · bạn đã luyện ${recent} câu.</p>
-        ${weak.length ? html`<h2>Nên luyện lại (dưới mục tiêu)</h2><div class="qlist">${weak.map((q) => html`<a class="qrow card" href="#/q/${q.id}"><span class="qtext">${q.text}</span><span class="bandbadge ${bandClass(q.last_band, t)}">${band(q.last_band)}</span></a>`)}</div>` : ''}
-        ${stats && stats.top_errors.length ? html`<h2>Lỗi bạn hay lặp lại</h2><div class="card"><ol class="small" style="margin:0;padding-left:20px">${stats.top_errors.map((e) => html`<li>${e.error} <span class="muted">(${e.count} lần)</span></li>`)}</ol></div>` : ''}
+        ${weak.length ? html`<h2>Nên luyện lại</h2><div class="qlist">${weak.slice(0, 3).map((q) => html`<a class="qrow card" href="#/q/${q.id}"><span class="qtext">${q.text}</span><span class="bandbadge ${bandClass(q.last_band, t)}">${band(q.last_band)}</span></a>`)}</div>` : ''}
+        ${stats && stats.top_errors.length ? html`<h2>Lỗi bạn hay lặp lại</h2><div class="card"><ol class="small" style="margin:0;padding-left:20px">${stats.top_errors.slice(0, 3).map((e) => html`<li>${e.error} <span class="muted">(${e.count} lần)</span></li>`)}</ol></div>` : ''}
+        ${recent ? html`<p class="small muted center" style="margin-top:28px">Bạn đã luyện ${recent} câu khác nhau.</p>` : ''}
       `);
+      // Tiếp tục: mở câu đầu tiên chưa luyện trong chuỗi
+      const cont = m.querySelector('#cont');
+      if (cont) { const done = new Set(qs.filter((q) => q.practiced).map((q) => q.id)); const nx = seq.ids.find((id) => !done.has(id)) || seq.ids[0]; cont.href = '#/q/' + nx + '?seq=1'; }
+      const p1 = m.querySelector('#goP1');
+      if (p1) p1.onclick = async () => { try { const r = await Api.call('practiceSet', { mode: 'p1_exam' }); App.Seq.start(r.name, r.ids); } catch (e) { toast(e.message); } };
+      const p23 = m.querySelector('#goP23');
+      if (p23) p23.onclick = () => App.startP2P3('');
     } catch (e) { fail('home', e); }
   }
 
@@ -244,7 +283,7 @@
     if (h === '#/welcome') return viewWelcome();
     if (h === '#/' || h === '#') return viewHome();
     if (h === '#/settings') return viewSettings();
-    for (const [re, fn] of ROUTES) { const mm = h.match(re); if (mm) return fn(...mm.slice(1).map(decodeURIComponent)); }
+    for (const [re, fn] of ROUTES) { const mm = h.match(re); if (mm) return fn(...mm.slice(1).map((x) => (x === undefined ? undefined : decodeURIComponent(x)))); }
     shell('', '<div class="notice bad">Không tìm thấy trang.</div>');
   }
   // Rời trang khi đang thi: hỏi lại.

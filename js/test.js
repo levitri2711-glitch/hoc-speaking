@@ -41,7 +41,7 @@
     App.cleanup = () => { clearInterval(timer); if (rec) rec.cancel(); Speech.stop(); if (!done) Api.call('abandonTest', { test_id: t.test_id }).catch(() => {}); App.leaveGuard = null; };
     const m = App.shell('test', html`<div class="narrow exam"><div class="row"><b id="ptitle"></b><span class="spacer"></span><span class="small muted" id="pcount"></span></div>
       <div class="progress-line"><i id="pl"></i></div><div class="card stage" id="st"></div>
-      <p class="small muted center">Đang thi — đừng tải lại trang. <button class="btn sm ghost" id="quit">Thoát (không chấm)</button></p></div>`);
+      <p class="small muted center">Đang thi — đừng tải lại trang. <button class="btn sm ghost" id="quit">Thoát (không chấm)</button></p></div>`, { focus: { back: '#/test', title: 'Phòng thi' } });
     const st = m.querySelector('#st');
     m.querySelector('#quit').onclick = () => { location.hash = '#/test'; };
 
