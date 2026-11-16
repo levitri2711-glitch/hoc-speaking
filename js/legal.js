@@ -5,28 +5,37 @@
   const UPDATED = '16/11/2026';
   const PAGES = {
     privacy: ['Chính sách bảo mật', `
-      <h2>1. Dữ liệu chúng tôi thu thập</h2>
+      <p class="small">Áp dụng theo Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 (hiệu lực 01/01/2026) và văn bản hướng dẫn; với người dùng ở Liên minh châu Âu, áp dụng thêm các nguyên tắc của GDPR. Bên kiểm soát và xử lý dữ liệu: ${OWNER}.</p>
+      <h2>1. Dữ liệu thu thập</h2>
       <ul><li><b>Email</b>: để gửi link đăng nhập và thông báo. Không có mật khẩu.</li>
-      <li><b>Bản ghi âm</b> câu trả lời Speaking của bạn, bản chép lời và kết quả chấm (band, nhận xét, lỗi).</li>
+      <li><b>Bản ghi âm giọng nói</b> câu trả lời Speaking, bản chép lời và kết quả chấm. Giọng nói <b>không</b> được dùng để nhận dạng hay xác thực danh tính.</li>
       <li><b>Cài đặt</b>: band mục tiêu, giọng đọc; câu hỏi bạn tự thêm.</li>
-      <li><b>Nhật ký hệ thống</b>: đăng nhập, thay đổi quyền, lượt dùng AI — để bảo mật và chống lạm dụng.</li></ul>
-      <h2>2. Mục đích</h2>
-      <p>Chỉ để vận hành việc luyện tập: chấm bài, lưu tiến bộ, giáo viên nhận xét, quản trị quyền. Không bán, không cho thuê, không dùng cho quảng cáo.</p>
-      <h2>3. Nơi lưu trữ và bên thứ ba</h2>
-      <ul><li>Dữ liệu và bản ghi âm lưu trên Google Sheets / Google Drive của quản trị viên (Google Apps Script).</li>
-      <li><b>Chấm điểm</b>: bản ghi âm và câu hỏi được gửi tới <b>Google Gemini API</b> để nghe và chấm. Ở gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm của Google. Không gửi email hay tên của bạn kèm bản ghi.</li>
+      <li><b>Nhật ký hệ thống</b>: đăng nhập, thay đổi quyền, lượt dùng AI, để bảo mật và chống lạm dụng.</li></ul>
+      <p>Không thu thập: tên thật, số điện thoại, giấy tờ tuỳ thân, vị trí, dữ liệu thanh toán. Ứng dụng <b>không</b> thu phí và không quảng cáo.</p>
+      <h2>2. Mục đích và căn cứ</h2>
+      <p>Chỉ để vận hành việc luyện tập: chấm bài, lưu tiến bộ, giáo viên nhận xét, quản trị quyền. Căn cứ xử lý: <b>sự đồng ý</b> của bạn ở lần đăng nhập đầu tiên. Không bán, không cho thuê, không dùng cho quảng cáo hay mục đích khác.</p>
+      <h2>3. Nơi lưu trữ, bên thứ ba và chuyển dữ liệu ra nước ngoài</h2>
+      <ul><li>Dữ liệu và bản ghi âm lưu trên Google Sheets / Google Drive của quản trị viên (Google Apps Script). Máy chủ của Google có thể đặt ngoài Việt Nam.</li>
+      <li><b>Chấm điểm</b>: bản ghi âm và câu hỏi được gửi tới <b>Google Gemini API</b> (Google LLC, Hoa Kỳ). Không gửi email hay tên kèm bản ghi. Ở gói miễn phí, Google có thể dùng nội dung gửi lên để cải thiện sản phẩm, và người kiểm duyệt của Google có thể xem nội dung đó.</li>
       <li><b>Phụ đề tức thời</b> khi đang nói dùng bộ nhận giọng nói của trình duyệt (Chrome gửi âm thanh tới Google, Safari dùng dịch vụ của Apple).</li>
       <li>Giọng giám khảo là giọng đọc có sẵn của trình duyệt / hệ điều hành.</li></ul>
-      <p>Vì vậy: <b>đừng nói thông tin nhạy cảm</b> (số giấy tờ, địa chỉ cụ thể, thông tin sức khoẻ…) trong bài luyện.</p>
+      <p>Vì vậy: <b>đừng nói dữ liệu nhạy cảm</b> (số giấy tờ, địa chỉ cụ thể, sức khoẻ, tôn giáo, chính trị, tài chính…) trong bài luyện.</p>
       <h2>4. Thời gian lưu</h2>
-      <p>Lưu khi tài khoản còn hoạt động. Bạn tự xoá được từng bài (xoá cả file ghi âm) trong trang kết quả. Khi quyền bị thu hồi hoặc bạn yêu cầu, dữ liệu được xoá trong 30 ngày; nhật ký bảo mật giữ tối đa 12 tháng.</p>
+      <ul><li>File ghi âm: <b>tự xoá sau 180 ngày</b> (kết quả chấm vẫn giữ để theo dõi tiến bộ).</li>
+      <li>Kết quả, cài đặt: khi tài khoản còn hoạt động. Khi quyền bị thu hồi hoặc bạn yêu cầu: xoá trong 30 ngày.</li>
+      <li>Nhật ký bảo mật: tối đa 12 tháng.</li></ul>
       <h2>5. Quyền của bạn</h2>
-      <p>Yêu cầu xem, sửa, xuất hoặc xoá dữ liệu bằng cách liên hệ ${CONTACT}.</p>
-      <h2>6. Bảo mật</h2>
-      <p>Link đăng nhập dùng một lần, hết hạn sau 15 phút; phiên đăng nhập ký điện tử, hết hạn sau 30 ngày; mọi thao tác được kiểm tra quyền ở máy chủ; chỉ bạn và giáo viên (Editor/Owner) nghe được bản ghi của bạn.</p>`],
+      <p>Bạn có quyền được biết, đồng ý hoặc rút lại đồng ý, xem, chỉnh sửa, xoá, hạn chế xử lý, phản đối xử lý, nhận bản sao dữ liệu, khiếu nại và yêu cầu bồi thường theo pháp luật.</p>
+      <ul><li>Tự xoá từng bài trong trang kết quả, hoặc <b>Cài đặt → Xoá toàn bộ dữ liệu của tôi</b> (xoá ngay, đồng thời rút lại đồng ý).</li>
+      <li>Yêu cầu khác (xem, sửa, xuất dữ liệu): liên hệ ${CONTACT}; trả lời trong 72 giờ làm việc.</li>
+      <li>Bạn có thể khiếu nại tới cơ quan chuyên trách bảo vệ dữ liệu cá nhân (Bộ Công an).</li></ul>
+      <h2>6. Độ tuổi</h2>
+      <p>Chỉ dành cho người <b>từ 18 tuổi trở lên</b>, vì điều khoản của Google Gemini API không cho phép dịch vụ dành cho người dưới 18 tuổi.</p>
+      <h2>7. Bảo mật và sự cố</h2>
+      <p>Link đăng nhập dùng một lần, hết hạn sau 15 phút; phiên đăng nhập ký điện tử, hết hạn sau 30 ngày; mọi thao tác được kiểm tra quyền ở máy chủ; chỉ bạn và giáo viên (Editor/Owner) nghe được bản ghi của bạn; khoá API chỉ nằm ở máy chủ, không có trong trang web. Nếu xảy ra sự cố lộ dữ liệu, quản trị viên báo cho người bị ảnh hưởng và cơ quan có thẩm quyền trong thời hạn luật định (72 giờ).</p>`],
     terms: ['Điều khoản sử dụng', `
       <h2>1. Tài khoản và quyền truy cập</h2>
-      <p>Học speaking là ứng dụng luyện tập nội bộ do ${OWNER} vận hành. Quyền (Viewer, Học viên, Editor) do quản trị viên cấp và có thể thu hồi bất cứ lúc nào. Không chia sẻ link đăng nhập.</p>
+      <p>Học speaking là ứng dụng luyện tập nội bộ, <b>miễn phí</b>, chỉ dành cho người từ 18 tuổi, do ${OWNER} vận hành. Quyền (Viewer, Học viên, Editor) do quản trị viên cấp và có thể thu hồi bất cứ lúc nào. Không chia sẻ link đăng nhập.</p>
       <h2>2. Nội dung</h2>
       <ul><li>Ngân hàng câu hỏi và câu mẫu chỉ dùng cho việc học cá nhân, không sao chép để kinh doanh hay đăng lại.</li>
       <li>Bạn chịu trách nhiệm về câu hỏi bạn thêm và nội dung bạn nói; không đưa nội dung vi phạm pháp luật hoặc bản quyền.</li></ul>
@@ -39,7 +48,7 @@
     disclaimer: ['Miễn trừ trách nhiệm', `
       <ul><li>Band điểm là <b>ước lượng của AI</b> dựa trên band descriptors công khai, chỉ để tham khảo; không phải điểm IELTS chính thức và không thay thế giám khảo được cấp phép.</li>
       <li>IELTS là thương hiệu của British Council, IDP: IELTS Australia và Cambridge University Press &amp; Assessment. Học speaking không liên kết hay được bảo trợ bởi các tổ chức này.</li>
-      <li>Câu hỏi forecast là dự đoán từ tài liệu tham khảo, không bảo đảm xuất hiện trong kỳ thi thật.</li>
+      <li>Câu hỏi forecast và câu mẫu thuộc quyền của tác giả tài liệu gốc; chỉ dùng nội bộ để học, không công khai hay kinh doanh. Đây là dự đoán, không bảo đảm xuất hiện trong kỳ thi thật.</li>
       <li>Kết quả học tập phụ thuộc vào việc luyện tập; chúng tôi không cam kết điểm số cụ thể.</li>
       <li>Dịch vụ bên thứ ba (Google Gemini, Google Drive, trình duyệt) có chính sách riêng; chúng tôi không chịu trách nhiệm khi các dịch vụ đó gián đoạn.</li></ul>`],
     complaints: ['Tiếp nhận và xử lý khiếu nại', `

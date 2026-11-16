@@ -138,8 +138,9 @@
           <div class="row"><select class="input" name="voice" style="flex:1">${raw(voiceOptions(u.prefs.voice))}</select><button type="button" class="btn" id="tryv">Nghe thử</button></div>
           <span class="small muted">Dùng giọng có sẵn của trình duyệt: Chrome là giọng Google, Safari là giọng Apple.</span></label>
         <label class="field"><span>Tốc độ đọc</span><select class="input" name="rate"><option value="0.85">Chậm</option><option value="0.95" selected>Vừa (như phòng thi)</option><option value="1.05">Nhanh</option></select></label>
-        <div class="notice warn small">3. <b>Dữ liệu giọng nói:</b> bản ghi âm của bạn được lưu trên Google Drive của giáo viên và gửi tới Google Gemini để chấm điểm. Ở gói miễn phí, Google có thể dùng dữ liệu gửi lên để cải thiện dịch vụ. Không nói thông tin nhạy cảm (số giấy tờ, địa chỉ cụ thể…) trong bài. Bạn có thể xoá từng bài bất cứ lúc nào.</div>
-        <label class="row small"><input type="checkbox" name="agree" required> Tôi đã đọc và đồng ý <a href="#/legal/terms" target="_blank">Điều khoản</a> và <a href="#/legal/privacy" target="_blank">Chính sách bảo mật</a>.</label>
+        <div class="notice warn small">3. <b>Dữ liệu giọng nói:</b> bản ghi âm của bạn được lưu trên Google Drive của giáo viên và gửi tới Google Gemini để chấm điểm. Máy chủ của Google có thể đặt ở nước ngoài (chuyển dữ liệu ra nước ngoài). Ở gói miễn phí, Google có thể dùng dữ liệu gửi lên để cải thiện dịch vụ và người kiểm duyệt của Google có thể nghe/đọc. Không nói thông tin nhạy cảm (số giấy tờ, địa chỉ cụ thể, sức khoẻ…) trong bài. File ghi âm tự xoá sau 180 ngày; bạn có thể xoá từng bài hoặc toàn bộ dữ liệu bất cứ lúc nào.</div>
+        <label class="row small"><input type="checkbox" name="age18" required> Tôi đủ 18 tuổi trở lên.</label>
+        <label class="row small"><input type="checkbox" name="agree" required> Tôi đã đọc <a href="#/legal/terms" target="_blank">Điều khoản</a>, <a href="#/legal/privacy" target="_blank">Chính sách bảo mật</a> và đồng ý cho xử lý dữ liệu cá nhân (email, giọng nói, kết quả chấm) như mô tả ở trên.</label>
         <p><button class="btn primary">Bắt đầu luyện</button></p>
       </form></div>`);
     const f = m.querySelector('#wf');
@@ -148,7 +149,7 @@
     f.onsubmit = async (e) => {
       e.preventDefault();
       try {
-        await Api.call('savePrefs', { target_band: Number(f.target_band.value), voice: f.voice.value, rate: f.rate.value, agreed: true });
+        await Api.call('savePrefs', { target_band: Number(f.target_band.value), voice: f.voice.value, rate: f.rate.value, agreed: true, age18: f.age18.checked });
         await App.refreshMe();
         location.hash = '#/';
       } catch (err) { toast(err.message); }
@@ -207,7 +208,8 @@
         </form>
       </div>
       <h2>Tài khoản</h2>
-      <div class="row"><button class="btn" id="out">Đăng xuất</button></div>
+      <div class="row"><button class="btn" id="out">Đăng xuất</button>${u.role === 'owner' ? '' : html`<button class="btn danger" id="wipe">Xoá toàn bộ dữ liệu của tôi</button>`}</div>
+      ${u.role === 'owner' ? '' : html`<p class="small muted">Rút lại đồng ý: xoá vĩnh viễn mọi bài làm, ghi âm, bài thi, câu hỏi riêng của bạn và khoá tài khoản. Không khôi phục được.</p>`}
       <p class="small muted" style="margin-top:24px"><a href="#/legal/privacy">Bảo mật</a> · <a href="#/legal/terms">Điều khoản</a> · <a href="#/legal/disclaimer">Miễn trừ</a> · <a href="#/legal/complaints">Khiếu nại</a></p>
     </div>`);
     const f = m.querySelector('#sf');
@@ -217,6 +219,12 @@
       try { await Api.call('savePrefs', { target_band: Number(f.target_band.value), voice: f.voice.value, rate: f.rate.value }); await App.refreshMe(); App.qs = null; toast('Đã lưu'); } catch (err) { toast(err.message); }
     };
     m.querySelector('#out').onclick = () => { Api.logout(); App.user = null; location.hash = '#/'; route(); };
+    const w = m.querySelector('#wipe');
+    if (w) w.onclick = async () => {
+      const c = prompt('Xoá vĩnh viễn toàn bộ dữ liệu và khoá tài khoản. Gõ XOA để xác nhận:');
+      if (c !== 'XOA') return;
+      try { const r = await Api.call('deleteMyData', { confirm: 'XOA' }); alert('Đã xoá ' + r.attempts + ' bài làm và khoá tài khoản.'); Api.logout(); App.user = null; location.hash = '#/'; route(); } catch (err) { toast(err.message); }
+    };
   }
 
   // ---------- Định tuyến ----------
