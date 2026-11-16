@@ -1,7 +1,7 @@
 // Văn bản pháp lý (tự soạn) – nên nhờ luật sư rà soát trước khi mở rộng ra công chúng.
 (function () {
-  const OWNER = 'Quản trị viên Học speaking (cá nhân, dùng nội bộ, chưa đăng ký pháp lý với cơ quan chức năng)';
-  const CONTACT = 'email của quản trị viên (trang Cài đặt → liên hệ người đã mời bạn)';
+  const OWNER = 'Quản trị viên Học speaking (chưa đăng ký pháp lý với cơ quan chức năng)';
+  const CONTACT = 'levitri2711@gmail.com';
   const UPDATED = '16/11/2026';
   const PAGES = {
     privacy: ['Chính sách bảo mật', `
